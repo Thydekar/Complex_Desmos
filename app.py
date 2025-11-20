@@ -3,7 +3,6 @@ import numpy as np
 import plotly.graph_objects as go
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication
-# === PAGE CONFIG + DARK THEME ===
 st.set_page_config(page_title="Complex Desmos", layout="wide")
 st.markdown("""
  <style>
@@ -14,15 +13,14 @@ st.markdown("""
 """,
             unsafe_allow_html=True)
 st.title("Complex Desmos")
-# === SIDEBAR ===
 with st.sidebar:
     st.header("Function")
-    expr_str = st.text_input("f(x):", value="")  # Completely empty
+    expr_str = st.text_input("f(x):", value="")
     st.subheader("View")
     view_mode = st.radio(
         "Mode:",
         ["2D: x vs y", "2D: I vs y", "3D: x-I-y", "3D+I (Re+Im)"],
-        index=0  # Default: 2D x vs y
+        index=0
     )
     st.markdown("---")
     st.subheader("Cubic Zoom")
@@ -39,7 +37,6 @@ with st.sidebar:
     show_real_plane = st.checkbox("Red: I = 0 (real axis)", value=False)
     show_imag_plane = st.checkbox("Green: x = 0 (imag axis)", value=False)
     show_zero_plane = st.checkbox("Dark: y = 0 (Re(f)=0)", value=False)
-    # === TOGGLE FOR 3D+I ONLY ===
     if view_mode == "3D+I (Re+Im)":
         st.markdown("---")
         st.subheader("Surface Toggle")
@@ -48,9 +45,7 @@ with st.sidebar:
     else:
         show_re_surface = True
         show_im_surface = True
-# === FIXED RESOLUTION ===
 res = 140
-# === PARSE FUNCTION ===
 x_sym = sp.Symbol('x')
 if expr_str.strip() == "":
     st.warning("Enter a function above to begin plotting.")
@@ -66,7 +61,6 @@ except Exception as e:
     st.stop()
 
 
-# === EXACT ZERO FINDER ===
 def find_exact_zeros_sympy(expr, x_min, x_max, i_min, i_max):
     z = sp.Symbol('z')
     expr_z = expr.subs(x_sym, z)
@@ -86,11 +80,9 @@ def find_exact_zeros_sympy(expr, x_min, x_max, i_min, i_max):
     return zeros
 
 
-# === COMPUTE ZEROS ONCE (USED BY ALL MODES) ===
 zeros = find_exact_zeros_sympy(expr, x_min, x_max, i_min, i_max)
 
 
-# === DISPLAY ZEROS TABLE (AFTER EVERY GRAPH) ===
 def display_zeros_table(zeros):
     if not zeros:
         st.info("**No zeros found in the current domain.**")
@@ -99,7 +91,6 @@ def display_zeros_table(zeros):
     st.markdown("---")
     st.subheader("**Exact Zeros Found**")
 
-    # Create table data
     zero_data = []
     for i, (x_val, y_val, i_val) in enumerate(zeros, 1):
         complex_z = complex(x_val, i_val)
@@ -107,18 +98,14 @@ def display_zeros_table(zeros):
             "Zero #": i,
             "z = x + i·I": f"{x_val:.6f} + {i_val:.6f}i",
             "Re(f(z))": f"{y_val:.6f}",
-            "Im(f(z))": "0.000000"  # Should be exactly 0
+            "Im(f(z))": "0.000000"
         })
 
-    # Display as nice table
     st.table(zero_data)
 
     st.markdown("*Zeros where f(z) = 0 exactly*")
 
 
-# ----------------------------------------------------------------------
-# 2D: x vs y
-# ----------------------------------------------------------------------
 if view_mode == "2D: x vs y":
     xs = np.linspace(x_min, x_max, 1000)
     ys = np.real(f_np(xs))
@@ -151,12 +138,8 @@ if view_mode == "2D: x vs y":
                       height=600)
     st.plotly_chart(fig, use_container_width=True)
 
-    # ADD ZEROS TABLE HERE
     display_zeros_table(zeros)
 
-# ----------------------------------------------------------------------
-# 2D: I vs y
-# ----------------------------------------------------------------------
 elif view_mode == "2D: I vs y":
     is_ = np.linspace(i_min, i_max, 1000)
     ys = np.real(f_np(1j * is_))
@@ -189,12 +172,8 @@ elif view_mode == "2D: I vs y":
                       height=600)
     st.plotly_chart(fig, use_container_width=True)
 
-    # ADD ZEROS TABLE HERE
     display_zeros_table(zeros)
 
-# ----------------------------------------------------------------------
-# 3D: x-I-y (Re(f) only)
-# ----------------------------------------------------------------------
 elif view_mode == "3D: x-I-y":
     X = np.linspace(x_min, x_max, res)
     I = np.linspace(i_min, i_max, res)
@@ -309,13 +288,9 @@ elif view_mode == "3D: x-I-y":
                                   font=dict(color='white')))
     st.plotly_chart(fig, use_container_width=True)
 
-    # ADD ZEROS TABLE HERE
     display_zeros_table(zeros)
 
-# ----------------------------------------------------------------------
-# 3D+I (Re+Im) – TOGGLE SURFACES + PLANE OPACITY
-# ----------------------------------------------------------------------
-else:  # "3D+I (Re+Im)"
+else: 
     X = np.linspace(x_min, x_max, res)
     I = np.linspace(i_min, i_max, res)
     Xg, Ig = np.meshgrid(X, I)
@@ -330,7 +305,6 @@ else:  # "3D+I (Re+Im)"
     Y_imag_t = Y_imag[trim, trim]
     contour_step = (y_max - y_min) / 20
     fig = go.Figure()
-    # Re(f) – toggleable, solid, contoured
     if show_re_surface:
         fig.add_trace(
             go.Surface(x=Xg_t,
@@ -351,7 +325,6 @@ else:  # "3D+I (Re+Im)"
                                             color='white',
                                             width=1.8)),
                        name="Re(f)"))
-    # Im(f) – toggleable, solid, contoured
     if show_im_surface:
         fig.add_trace(
             go.Surface(x=Xg_t,
@@ -387,7 +360,6 @@ else:  # "3D+I (Re+Im)"
                     hovertemplate=
                     '<b>Approx Zero</b><br>x=%{x:.3f}<br>Re=%{y:.3f}<br>Im~0<br>I=%{z:.3f}<extra></extra>'
                 ))
-    # Exact zeros
     if zeros:
         zx, zy, zi = zip(*zeros)
         fig.add_trace(
@@ -404,7 +376,6 @@ else:  # "3D+I (Re+Im)"
                 hovertemplate=
                 '<b>Exact Zero</b><br>x=%{x:.6f}<br>y=%{y:.6f}<br>I=%{z:.6f}<extra></extra>'
             ))
-    # Reference planes – use plane_opacity
     if show_real_plane:
         Yp = np.linspace(y_min, y_max, res)
         Xp, Yp = np.meshgrid(X, Yp)
@@ -473,5 +444,4 @@ else:  # "3D+I (Re+Im)"
                     font=dict(color='white')))
     st.plotly_chart(fig, use_container_width=True)
 
-    # ADD ZEROS TABLE HERE
     display_zeros_table(zeros)
